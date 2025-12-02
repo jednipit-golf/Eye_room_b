@@ -9,7 +9,7 @@ const generateToken = (id) => {
 };
 
 // @desc    ลงทะเบียนผู้ใช้งานใหม่
-// @route   POST /api/auth/register
+// @route   POST /api/v1/auth/register
 // @access  Public
 exports.register = async (req, res) => {
     try {
@@ -59,7 +59,7 @@ exports.register = async (req, res) => {
 };
 
 // @desc    เข้าสู่ระบบ
-// @route   POST /api/auth/login
+// @route   POST /api/v1/auth/login
 // @access  Public
 exports.login = async (req, res) => {
     try {
@@ -116,7 +116,7 @@ exports.login = async (req, res) => {
 };
 
 // @desc    ดึงข้อมูลผู้ใช้งานปัจจุบัน
-// @route   GET /api/auth/me
+// @route   GET /api/v1/auth/me
 // @access  Private
 exports.getMe = async (req, res) => {
     try {

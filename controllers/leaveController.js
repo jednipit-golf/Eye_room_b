@@ -2,7 +2,7 @@ const Leave = require('../models/Leave');
 const User = require('../models/User');
 
 // @desc    สร้างคำขอลาใหม่
-// @route   POST /api/leaves
+// @route   POST /api/v1/leaves
 // @access  Private
 exports.createLeave = async (req, res) => {
     try {
@@ -50,7 +50,7 @@ exports.createLeave = async (req, res) => {
 };
 
 // @desc    ดึงรายการคำขอลาของผู้ใช้งาน
-// @route   GET /api/leaves/my-leaves
+// @route   GET /api/v1/leaves/my-leaves
 // @access  Private
 exports.getMyLeaves = async (req, res) => {
     try {
@@ -73,7 +73,7 @@ exports.getMyLeaves = async (req, res) => {
 };
 
 // @desc    ดึงรายการคำขอลาทั้งหมด (สำหรับ manager/admin)
-// @route   GET /api/leaves
+// @route   GET /api/v1/leaves
 // @access  Private (Manager/Admin)
 exports.getAllLeaves = async (req, res) => {
     try {
@@ -106,7 +106,7 @@ exports.getAllLeaves = async (req, res) => {
 };
 
 // @desc    ดึงคำขอลาตาม ID
-// @route   GET /api/leaves/:id
+// @route   GET /api/v1/leaves/:id
 // @access  Private
 exports.getLeaveById = async (req, res) => {
     try {
@@ -145,7 +145,7 @@ exports.getLeaveById = async (req, res) => {
 };
 
 // @desc    อนุมัติคำขอลา
-// @route   PUT /api/leaves/:id/approve
+// @route   PUT /api/v1/leaves/:id/approve
 // @access  Private (Manager/Admin)
 exports.approveLeave = async (req, res) => {
     try {
@@ -222,7 +222,7 @@ exports.approveLeave = async (req, res) => {
 };
 
 // @desc    ปฏิเสธคำขอลา
-// @route   PUT /api/leaves/:id/reject
+// @route   PUT /api/v1/leaves/:id/reject
 // @access  Private (Manager/Admin)
 exports.rejectLeave = async (req, res) => {
     try {
@@ -267,7 +267,7 @@ exports.rejectLeave = async (req, res) => {
 };
 
 // @desc    ยกเลิกคำขอลา
-// @route   PUT /api/leaves/:id/cancel
+// @route   PUT /api/v1/leaves/:id/cancel
 // @access  Private
 exports.cancelLeave = async (req, res) => {
     try {
@@ -320,7 +320,7 @@ exports.cancelLeave = async (req, res) => {
 };
 
 // @desc    ดึงสถิติการลา
-// @route   GET /api/leaves/stats
+// @route   GET /api/v1/leaves/stats
 // @access  Private
 exports.getLeaveStats = async (req, res) => {
     try {

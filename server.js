@@ -27,8 +27,8 @@ app.get('/', (req, res) => {
     });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/leaves', leaveRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/leaves', leaveRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
