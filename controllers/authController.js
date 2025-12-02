@@ -39,7 +39,8 @@ exports.register = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                telephone: user.telephone
+                telephone: user.telephone,
+                role: user.role
             }
         });
     } catch (error) {
@@ -92,7 +93,8 @@ exports.login = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                telephone: user.telephone
+                telephone: user.telephone,
+                role: user.role
             }
         });
     } catch (error) {
@@ -116,7 +118,8 @@ exports.getMe = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                telephone: user.telephone
+                telephone: user.telephone,
+                role: user.role
             }
         });
     } catch (error) {
