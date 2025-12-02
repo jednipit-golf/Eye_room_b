@@ -153,7 +153,7 @@ exports.getLeaveById = async (req, res) => {
 
 // @desc    อนุมัติคำขอลา
 // @route   PUT /api/v1/leaves/:id/approve
-// @access  Private (Manager/Admin)
+// @access  Private (Admin)
 exports.approveLeave = async (req, res) => {
     try {
         const leave = await Leave.findById(req.params.id).populate('user');
@@ -197,7 +197,7 @@ exports.approveLeave = async (req, res) => {
 
 // @desc    ปฏิเสธคำขอลา
 // @route   PUT /api/v1/leaves/:id/reject
-// @access  Private (Manager/Admin)
+// @access  Private (Admin)
 exports.rejectLeave = async (req, res) => {
     try {
         const leave = await Leave.findById(req.params.id);
@@ -265,13 +265,19 @@ exports.cancelLeave = async (req, res) => {
                 message: 'คำขอนี้ถูกยกเลิกแล้ว'
             });
         }
-
-        leave.status = 'cancelled';
-        await leave.save();
+        
+        if (leave.status === 'rejected' || leave.status === 'approved') {
+            return res.status(400).json({
+                success: false,
+                message: 'ไม่สามารถยกเลิกคำขอนี้ได้'
+            });
+        }
+        // ลบคำขอลาออกจากฐานข้อมูล
+        await Leave.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
-            data: leave
+            message: 'ยกเลิกและลบคำขอลาสำเร็จ'
         });
     } catch (error) {
         res.status(500).json({
