@@ -13,25 +13,22 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { email, password, firstName, lastName, department, position } = req.body;
+        const { name, telephone, password } = req.body;
 
-        // ตรวจสอบว่ามี email นี้ในระบบแล้วหรือไม่
-        const existingUser = await User.findOne({ email });
+        // ตรวจสอบว่ามี telephone นี้ในระบบแล้วหรือไม่
+        const existingUser = await User.findOne({ telephone });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: 'อีเมลนี้ถูกใช้งานแล้ว'
+                message: 'เบอร์โทรศัพท์นี้ถูกใช้งานแล้ว'
             });
         }
 
         // สร้างผู้ใช้งานใหม่
         const user = await User.create({
-            email,
-            password,
-            firstName,
-            lastName,
-            department,
-            position
+            name,
+            telephone,
+            password
         });
 
         const token = generateToken(user._id);
@@ -41,12 +38,8 @@ exports.register = async (req, res) => {
             token,
             user: {
                 id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                department: user.department,
-                position: user.position,
-                role: user.role
+                name: user.name,
+                telephone: user.telephone
             }
         });
     } catch (error) {
@@ -63,10 +56,10 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
     try {
-        const { name, telephone, password } = req.body;
+        const {telephone, password } = req.body;
 
         // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
-        if (!name || !telephone || !password) {
+        if (!telephone || !password) {
             return res.status(400).json({
                 success: false,
                 message: 'กรุณากรอกชื่อ เบอร์โทรศัพท์ และรหัสผ่าน'
@@ -74,11 +67,11 @@ exports.login = async (req, res) => {
         }
 
         // ค้นหาผู้ใช้งาน
-        const user = await User.findOne({ name, telephone }).select('+password');
+        const user = await User.findOne({ telephone }).select('+password');
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'ชื่อ เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
+                message: ' เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
             });
         }
 
@@ -87,7 +80,7 @@ exports.login = async (req, res) => {
         if (!isPasswordMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'ชื่อ เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
+                message: 'เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
             });
         }
 
@@ -99,13 +92,7 @@ exports.login = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                telephone: user.telephone,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                department: user.department,
-                position: user.position,
-                role: user.role
+                telephone: user.telephone
             }
         });
     } catch (error) {
@@ -128,15 +115,8 @@ exports.getMe = async (req, res) => {
             success: true,
             user: {
                 id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                department: user.department,
-                position: user.position,
-                role: user.role,
-                annualLeaveBalance: user.annualLeaveBalance,
-                sickLeaveBalance: user.sickLeaveBalance,
-                personalLeaveBalance: user.personalLeaveBalance
+                name: user.name,
+                telephone: user.telephone
             }
         });
     } catch (error) {
