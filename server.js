@@ -20,8 +20,15 @@ connectDB();
 
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 
 //body parser
 app.use(express.json());
