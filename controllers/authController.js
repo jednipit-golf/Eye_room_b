@@ -129,7 +129,7 @@ exports.getMe = async (req, res) => {
 };
 
 // @desc    ออกจากระบบ
-// @route   POST /api/v1/auth/logout
+// @route   GET /api/v1/auth/logout
 // @access  Private
 exports.logout = async (req, res, next) => {
     res.clearCookie('token', {
