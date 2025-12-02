@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
 const { xss } = require('express-xss-sanitizer');
@@ -14,10 +14,16 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 
-const app = express();
-
 // Connect to MongoDB
 connectDB();
+
+const app = express();
+
+//body parser
+app.use(express.json());
+
+//Cookie parser
+app.use(cookieParser());
 
 //Sanitize data
 app.use(mongoSanitize());
@@ -40,21 +46,6 @@ app.use(hpp());
 
 // Middleware
 app.use(cors());
-
-app.use(express.json({
-    verify: (req, res, buf, encoding) => {
-        try {
-            JSON.parse(buf);
-        } catch (e) {
-            // ถ้า parse ไม่ได้และมี Content-Type: application/json แต่ body ว่าง
-            if (buf.length === 0 && req.headers['content-type']?.includes('application/json')) {
-                // ไม่ throw error ให้ผ่านไป
-                return;
-            }
-            throw e;
-        }
-    }
-}));
 
 // Routes
 app.get('/', (req, res) => {
