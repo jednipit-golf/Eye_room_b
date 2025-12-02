@@ -63,22 +63,22 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { name, telephone, password } = req.body;
 
         // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
-        if (!email || !password) {
+        if (!name || !telephone || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'กรุณากรอกอีเมลและรหัสผ่าน'
+                message: 'กรุณากรอกชื่อ เบอร์โทรศัพท์ และรหัสผ่าน'
             });
         }
 
         // ค้นหาผู้ใช้งาน
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ name, telephone }).select('+password');
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+                message: 'ชื่อ เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
             });
         }
 
@@ -87,7 +87,7 @@ exports.login = async (req, res) => {
         if (!isPasswordMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+                message: 'ชื่อ เบอร์โทรศัพท์ หรือรหัสผ่านไม่ถูกต้อง'
             });
         }
 
@@ -98,6 +98,8 @@ exports.login = async (req, res) => {
             token,
             user: {
                 id: user._id,
+                name: user.name,
+                telephone: user.telephone,
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,

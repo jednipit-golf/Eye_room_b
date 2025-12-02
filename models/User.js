@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: [true, 'กรุณากรอกชื่อ'],
+        trim: true
+    },
+    telephone: {
+        type: String,
+        required: [true, 'กรุณากรอกเบอร์โทรศัพท์'],
+        unique: true,
+        trim: true
+    },
     email: {
         type: String,
         required: [true, 'กรุณากรอกอีเมล'],
