@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoSanitize=require('express-mongo-sanitize');
 const helmet=require('helmet');
+const {xss}=require('express-xss-sanitizer');
 require('dotenv').config();
 const connectDB = require('./config/database');
 
@@ -20,6 +21,9 @@ app.use(mongoSanitize());
 
 //Set security headers
 app.use(helmet());
+
+//Prevent XSS attacks
+app.use(xss());
 
 // Middleware
 app.use(cors());
