@@ -152,3 +152,57 @@ exports.logout = async (req, res, next) => {
         data: {}
     });
 };
+
+// @desc    ดึงข้อมูลสมาชิกทั้งหมดพร้อมประวัติการลา
+// @route   GET /api/v1/auth/members
+// @access  Private (Admin only)
+exports.getAllMembers = async (req, res) => {
+    try {
+        const Leave = require('../models/Leave');
+        
+        // ดึงข้อมูลสมาชิกทั้งหมด
+        const users = await User.find().select('-password').sort('name');
+        
+        // ดึงข้อมูลการลาของแต่ละคน
+        const membersWithLeaves = await Promise.all(
+            users.map(async (user) => {
+                const leaves = await Leave.find({ user: user._id })
+                    .populate('approvedBy', 'name')
+                    .sort('-createdAt');
+                
+                // นับสถิติการลา
+                const stats = {
+                    total: leaves.length,
+                    pending: leaves.filter(l => l.status === 'pending').length,
+                    approved: leaves.filter(l => l.status === 'approved').length,
+                    rejected: leaves.filter(l => l.status === 'rejected').length,
+                    totalDaysApproved: leaves
+                        .filter(l => l.status === 'approved')
+                        .reduce((sum, l) => sum + l.totalDays, 0)
+                };
+                
+                return {
+                    id: user._id,
+                    name: user.name,
+                    telephone: user.telephone,
+                    role: user.role,
+                    createdAt: user.createdAt,
+                    leaves: leaves,
+                    stats: stats
+                };
+            })
+        );
+        
+        res.status(200).json({
+            success: true,
+            count: membersWithLeaves.length,
+            data: membersWithLeaves
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสมาชิก',
+            error: error.message
+        });
+    }
+};
