@@ -295,11 +295,12 @@ exports.getLeaveStats = async (req, res) => {
     try {
         const userId = req.user.id;
         const currentYear = new Date().getFullYear();
+        const mongoose = require('mongoose');
 
         const stats = await Leave.aggregate([
             {
                 $match: {
-                    user: require('mongoose').Types.ObjectId(userId),
+                    user: new mongoose.Types.ObjectId(userId),
                     status: 'approved',
                     startDate: {
                         $gte: new Date(`${currentYear}-01-01`),
@@ -321,10 +322,12 @@ exports.getLeaveStats = async (req, res) => {
             data: stats[0] || { totalDays: 0, totalLeaves: 0 }
         });
     } catch (error) {
+        console.error('Error in getLeaveStats:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการดึงสถิติ',
-            error: error.message
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };
