@@ -13,7 +13,15 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { name, telephone, password } = req.body;
+        const { name, telephone, password, role } = req.body;
+
+        // ป้องกันการส่ง role มาในการลงทะเบียน
+        if (role !== undefined) {
+            return res.status(403).json({
+                success: false,
+                message: 'ไม่สามารถกำหนด role ได้ในการลงทะเบียน'
+            });
+        }
 
         // ตรวจสอบว่ามี telephone นี้ในระบบแล้วหรือไม่
         const existingUser = await User.findOne({ telephone });
@@ -202,6 +210,62 @@ exports.getAllMembers = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสมาชิก',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Reset password สำหรับ System Admin
+// @route   POST /api/v1/auth/reset-password
+// @access  Private (Admin only)
+exports.resetPassword = async (req, res) => {
+    try {
+        const { telephone, password } = req.body;
+
+        // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
+        if (!telephone || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'กรุณากรอกเบอร์โทรศัพท์และรหัสผ่านใหม่'
+            });
+        }
+
+        // ตรวจสอบความยาวรหัสผ่าน
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร'
+            });
+        }
+
+        // ค้นหาผู้ใช้จากเบอร์โทร
+        const user = await User.findOne({ telephone: telephone });
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'ไม่พบผู้ใช้งานที่มีเบอร์โทรศัพท์นี้'
+            });
+        }
+
+        // อัปเดตรหัสผ่าน (จะถูก hash อัตโนมัติผ่าน pre-save middleware)
+        user.password = password;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: `รีเซ็ตรหัสผ่านสำเร็จสำหรับ ${user.name} (${user.telephone}) - ผู้ใช้จะต้องเข้าสู่ระบบใหม่`,
+            forceLogout: true, // บอก client ให้ logout user นี้
+            data: {
+                name: user.name,
+                telephone: user.telephone,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน',
             error: error.message
         });
     }
