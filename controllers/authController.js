@@ -10,7 +10,7 @@ const generateToken = (id) => {
 
 // @desc    ลงทะเบียนผู้ใช้งานใหม่
 // @route   POST /api/v1/auth/register
-// @access  Public
+// @access  Private (System Admin only)
 exports.register = async (req, res) => {
     try {
         const { name, telephone, password, role } = req.body;
@@ -168,8 +168,8 @@ exports.getAllMembers = async (req, res) => {
     try {
         const Leave = require('../models/Leave');
         
-        // ดึงข้อมูลสมาชิกทั้งหมด
-        const users = await User.find().select('-password').sort('name');
+        // ดึงข้อมูลสมาชิกทั้งหมด (ไม่แสดง system-admin)
+        const users = await User.find({ role: { $ne: 'system-admin' } }).select('-password').sort('name');
         
         // ดึงข้อมูลการลาของแต่ละคน
         const membersWithLeaves = await Promise.all(
@@ -217,7 +217,7 @@ exports.getAllMembers = async (req, res) => {
 
 // @desc    Reset password สำหรับ System Admin
 // @route   POST /api/v1/auth/reset-password
-// @access  Private (Admin only)
+// @access  Private (System Admin only)
 exports.resetPassword = async (req, res) => {
     try {
         const { telephone, password } = req.body;

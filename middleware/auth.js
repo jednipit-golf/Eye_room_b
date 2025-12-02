@@ -49,3 +49,14 @@ exports.authorize = (...roles) => {
         next();
     };
 };
+
+// Middleware สำหรับตรวจสอบว่าเป็น system-admin เท่านั้น
+exports.authorizeSystemAdmin = (req, res, next) => {
+    if (req.user.role !== 'system-admin') {
+        return res.status(403).json({
+            success: false,
+            message: 'เฉพาะ System Admin เท่านั้นที่สามารถเข้าถึงได้'
+        });
+    }
+    next();
+};
