@@ -15,8 +15,20 @@ connectDB();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json());
+app.use(express.json({ 
+    verify: (req, res, buf, encoding) => {
+        try {
+            JSON.parse(buf);
+        } catch(e) {
+            // ถ้า parse ไม่ได้และมี Content-Type: application/json แต่ body ว่าง
+            if (buf.length === 0 && req.headers['content-type']?.includes('application/json')) {
+                // ไม่ throw error ให้ผ่านไป
+                return;
+            }
+            throw e;
+        }
+    }
+}));
 
 // Routes
 app.get('/', (req, res) => {

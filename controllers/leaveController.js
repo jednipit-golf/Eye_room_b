@@ -16,10 +16,28 @@ exports.createLeave = async (req, res) => {
             });
         }
 
+        // แปลงวันที่จากรูปแบบ DD-MM-YYYY (พ.ศ.) เป็น Date object
+        let parsedDate;
+        try {
+            const [day, month, yearBE] = startDate.split('-');
+            const yearAD = parseInt(yearBE) - 543; // แปลง พ.ศ. เป็น ค.ศ.
+            parsedDate = new Date(yearAD, parseInt(month) - 1, parseInt(day));
+            
+            // ตรวจสอบว่าวันที่ถูกต้องหรือไม่
+            if (isNaN(parsedDate.getTime())) {
+                throw new Error('รูปแบบวันที่ไม่ถูกต้อง');
+            }
+        } catch (err) {
+            return res.status(400).json({
+                success: false,
+                message: 'รูปแบบวันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ DD-MM-YYYY (พ.ศ.)'
+            });
+        }
+
         // สร้างคำขอลา
         const leave = await Leave.create({
             user: req.user.id,
-            startDate,
+            startDate: parsedDate,
             totalDays,
             reason
         });
@@ -203,8 +221,8 @@ exports.rejectLeave = async (req, res) => {
         await leave.save();
 
         const populatedLeave = await Leave.findById(leave._id)
-            .populate('user', 'firstName lastName email department')
-            .populate('approvedBy', 'firstName lastName');
+            .populate('user', 'name telephone')
+            .populate('approvedBy', 'name');
 
         res.status(200).json({
             success: true,
