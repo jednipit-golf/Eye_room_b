@@ -5,6 +5,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
 const { xss } = require('express-xss-sanitizer');
 const rateLimit = require('express-rate-limit');
+const hpp=require('hpp');
 
 require('dotenv').config();
 const connectDB = require('./config/database');
@@ -34,8 +35,12 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+//Prevent http param pollutions
+app.use(hpp());
+
 // Middleware
 app.use(cors());
+
 app.use(express.json({
     verify: (req, res, buf, encoding) => {
         try {
