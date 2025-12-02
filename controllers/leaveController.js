@@ -34,7 +34,7 @@ exports.createLeave = async (req, res) => {
         });
 
         // ดึงข้อมูลพร้อม populate user
-        const populatedLeave = await Leave.findById(leave._id).populate('user', 'firstName lastName email department');
+        const populatedLeave = await Leave.findById(leave._id).populate('user', 'name telephone');
 
         res.status(201).json({
             success: true,
@@ -55,7 +55,7 @@ exports.createLeave = async (req, res) => {
 exports.getMyLeaves = async (req, res) => {
     try {
         const leaves = await Leave.find({ user: req.user.id })
-            .populate('approvedBy', 'firstName lastName')
+            .populate('approvedBy', 'name')
             .sort('-createdAt');
 
         res.status(200).json({
@@ -87,8 +87,8 @@ exports.getAllLeaves = async (req, res) => {
         }
 
         const leaves = await Leave.find(query)
-            .populate('user', 'firstName lastName email department position')
-            .populate('approvedBy', 'firstName lastName')
+            .populate('user', 'name telephone')
+            .populate('approvedBy', 'name')
             .sort('-createdAt');
 
         res.status(200).json({
@@ -111,8 +111,8 @@ exports.getAllLeaves = async (req, res) => {
 exports.getLeaveById = async (req, res) => {
     try {
         const leave = await Leave.findById(req.params.id)
-            .populate('user', 'firstName lastName email department position')
-            .populate('approvedBy', 'firstName lastName');
+            .populate('user', 'name telephone')
+            .populate('approvedBy', 'name');
 
         if (!leave) {
             return res.status(404).json({
@@ -121,9 +121,8 @@ exports.getLeaveById = async (req, res) => {
             });
         }
 
-        // ตรวจสอบสิทธิ์ (เฉพาะเจ้าของ, manager, หรือ admin)
+        // ตรวจสอบสิทธิ์ (เฉพาะเจ้าของหรือ admin)
         if (leave.user._id.toString() !== req.user.id && 
-            req.user.role !== 'manager' && 
             req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -165,48 +164,15 @@ exports.approveLeave = async (req, res) => {
             });
         }
 
-        // ตรวจสอบยอดวันลาคงเหลือ
-        const user = leave.user;
-        let balance = 0;
-
-        switch (leave.leaveType) {
-            case 'annual':
-                balance = user.annualLeaveBalance;
-                break;
-            case 'sick':
-                balance = user.sickLeaveBalance;
-                break;
-            case 'personal':
-                balance = user.personalLeaveBalance;
-                break;
-            case 'unpaid':
-                balance = Infinity; // ไม่จำกัด
-                break;
-        }
-
-        if (balance < leave.totalDays) {
-            return res.status(400).json({
-                success: false,
-                message: 'วันลาคงเหลือไม่เพียงพอ'
-            });
-        }
-
         // อัพเดทสถานะ
         leave.status = 'approved';
         leave.approvedBy = req.user.id;
         leave.approvedDate = Date.now();
         await leave.save();
 
-        // หักวันลา
-        if (leave.leaveType !== 'unpaid') {
-            const field = `${leave.leaveType}LeaveBalance`;
-            user[field] -= leave.totalDays;
-            await user.save();
-        }
-
         const populatedLeave = await Leave.findById(leave._id)
-            .populate('user', 'firstName lastName email department')
-            .populate('approvedBy', 'firstName lastName');
+            .populate('user', 'name telephone')
+            .populate('approvedBy', 'name');
 
         res.status(200).json({
             success: true,
@@ -295,14 +261,6 @@ exports.cancelLeave = async (req, res) => {
             });
         }
 
-        // ถ้าถูกอนุมัติแล้วให้คืนวันลา
-        if (leave.status === 'approved' && leave.leaveType !== 'unpaid') {
-            const user = await User.findById(leave.user);
-            const field = `${leave.leaveType}LeaveBalance`;
-            user[field] += leave.totalDays;
-            await user.save();
-        }
-
         leave.status = 'cancelled';
         await leave.save();
 
@@ -346,17 +304,10 @@ exports.getLeaveStats = async (req, res) => {
             }
         ]);
 
-        const user = await User.findById(userId);
-
         res.status(200).json({
             success: true,
             data: {
-                usedLeaves: stats,
-                remainingLeaves: {
-                    annual: user.annualLeaveBalance,
-                    sick: user.sickLeaveBalance,
-                    personal: user.personalLeaveBalance
-                }
+                usedLeaves: stats
             }
         });
     } catch (error) {

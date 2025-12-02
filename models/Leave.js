@@ -53,7 +53,7 @@ const leaveSchema = new mongoose.Schema({
 });
 
 // คำนวณจำนวนวันลา (ไม่นับวันเสาร์-อาทิตย์)
-leaveSchema.pre('save', function(next) {
+leaveSchema.pre('save', function() {
     if (this.isModified('startDate') || this.isModified('endDate')) {
         const start = new Date(this.startDate);
         const end = new Date(this.endDate);
@@ -68,7 +68,6 @@ leaveSchema.pre('save', function(next) {
         
         this.totalDays = days;
     }
-    next();
 });
 
 module.exports = mongoose.model('Leave', leaveSchema);
