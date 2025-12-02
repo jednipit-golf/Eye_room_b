@@ -127,3 +127,25 @@ exports.getMe = async (req, res) => {
         });
     }
 };
+
+// @desc    ออกจากระบบ
+// @route   POST /api/v1/auth/logout
+// @access  Private
+exports.logout = async (req, res, next) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        sameSite: 'strict'
+    });
+    res.clearCookie('accessToken', {
+        httpOnly: true,
+        sameSite: 'strict'
+    });
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        sameSite: 'strict'
+    });
+    res.status(200).json({
+        success: true,
+        data: {}
+    });
+};
