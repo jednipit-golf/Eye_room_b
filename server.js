@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const mongoSanitize=require('express-mongo-sanitize');
-const helmet=require('helmet');
-const {xss}=require('express-xss-sanitizer');
+const mongoSanitize = require('express-mongo-sanitize');
+const helmet = require('helmet');
+const { xss } = require('express-xss-sanitizer');
+const rateLimit = require('express-rate-limit');
+
 require('dotenv').config();
 const connectDB = require('./config/database');
 
@@ -25,13 +27,20 @@ app.use(helmet());
 //Prevent XSS attacks
 app.use(xss());
 
+//Rate Limiting
+const limiter = rateLimit({
+    windowsMs: 10 * 60 * 1000,//10 mins
+    max: 100
+});
+app.use(limiter);
+
 // Middleware
 app.use(cors());
-app.use(express.json({ 
+app.use(express.json({
     verify: (req, res, buf, encoding) => {
         try {
             JSON.parse(buf);
-        } catch(e) {
+        } catch (e) {
             // ถ้า parse ไม่ได้และมี Content-Type: application/json แต่ body ว่าง
             if (buf.length === 0 && req.headers['content-type']?.includes('application/json')) {
                 // ไม่ throw error ให้ผ่านไป
@@ -44,7 +53,7 @@ app.use(express.json({
 
 // Routes
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         success: true,
         message: 'Leave Request Booking System API',
         version: '1.0.0'
