@@ -21,15 +21,7 @@ connectDB();
 const app = express();
 
 // Middleware
-// CORS Configuration - ปรับแก้สำหรับ production
-const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? process.env.FRONTEND_URL || 'https://your-production-domain.com'
-        : 'http://localhost:5173',
-    credentials: true, // อนุญาตให้ส่ง cookies
-    optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+app.use(cors());
 
 //body parser
 app.use(express.json());
@@ -41,22 +33,7 @@ app.use(cookieParser());
 app.use(sanitizeMiddleware);
 
 //Set security headers
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
-        },
-    },
-    hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true
-    },
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
+app.use(helmet());
 
 //Prevent XSS attacks
 app.use(xss());

@@ -4,7 +4,7 @@ const User = require('../models/User');
 // สร้าง JWT Token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '1h' // ลดเวลาเหลือ 1 ชั่วโมงเพื่อความปลอดภัย
+        expiresIn: '7d'
     });
 };
 
@@ -41,17 +41,9 @@ exports.register = async (req, res) => {
 
         const token = generateToken(user._id);
 
-        // ส่ง token ผ่าน httpOnly cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // ใช้ secure cookie ใน production
-            sameSite: 'strict',
-            maxAge: 60 * 60 * 1000 // 1 ชั่วโมง
-        });
-
         res.status(201).json({
             success: true,
-            token, // ส่ง token กลับไปด้วยสำหรับ backward compatibility
+            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -60,11 +52,10 @@ exports.register = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Register error:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการลงทะเบียน',
-            ...(process.env.NODE_ENV === 'development' && { error: error.message })
+            error: error.message
         });
     }
 };
@@ -104,14 +95,6 @@ exports.login = async (req, res) => {
 
         const token = generateToken(user._id);
 
-        // ส่ง token ผ่าน httpOnly cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 60 * 60 * 1000 // 1 ชั่วโมง
-        });
-
         res.status(200).json({
             success: true,
             token,
@@ -123,11 +106,10 @@ exports.login = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Login error:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
-            ...(process.env.NODE_ENV === 'development' && { error: error.message })
+            error: error.message
         });
     }
 };
@@ -149,11 +131,10 @@ exports.getMe = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('GetMe error:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการดึงข้อมูล',
-            ...(process.env.NODE_ENV === 'development' && { error: error.message })
+            error: error.message
         });
     }
 };
@@ -226,11 +207,10 @@ exports.getAllMembers = async (req, res) => {
             data: membersWithLeaves
         });
     } catch (error) {
-        console.error('GetAllMembers error:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสมาชิก',
-            ...(process.env.NODE_ENV === 'development' && { error: error.message })
+            error: error.message
         });
     }
 };
@@ -283,11 +263,10 @@ exports.resetPassword = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('ResetPassword error:', error);
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน',
-            ...(process.env.NODE_ENV === 'development' && { error: error.message })
+            error: error.message
         });
     }
 };
