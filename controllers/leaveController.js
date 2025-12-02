@@ -6,30 +6,21 @@ const User = require('../models/User');
 // @access  Private
 exports.createLeave = async (req, res) => {
     try {
-        const { leaveType, startDate, endDate, reason } = req.body;
+        const { startDate, totalDays, reason } = req.body;
 
         // ตรวจสอบข้อมูล
-        if (!leaveType || !startDate || !endDate || !reason) {
+        if (!startDate || !totalDays || !reason) {
             return res.status(400).json({
                 success: false,
                 message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
             });
         }
 
-        // ตรวจสอบว่าวันที่ถูกต้อง
-        if (new Date(startDate) > new Date(endDate)) {
-            return res.status(400).json({
-                success: false,
-                message: 'วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด'
-            });
-        }
-
         // สร้างคำขอลา
         const leave = await Leave.create({
             user: req.user.id,
-            leaveType,
             startDate,
-            endDate,
+            totalDays,
             reason
         });
 
@@ -77,13 +68,12 @@ exports.getMyLeaves = async (req, res) => {
 // @access  Private (Manager/Admin)
 exports.getAllLeaves = async (req, res) => {
     try {
-        const { status, leaveType, startDate, endDate } = req.query;
+        const { status, startDate } = req.query;
         let query = {};
 
         if (status) query.status = status;
-        if (leaveType) query.leaveType = leaveType;
-        if (startDate && endDate) {
-            query.startDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        if (startDate) {
+            query.startDate = { $gte: new Date(startDate) };
         }
 
         const leaves = await Leave.find(query)
@@ -192,7 +182,6 @@ exports.approveLeave = async (req, res) => {
 // @access  Private (Manager/Admin)
 exports.rejectLeave = async (req, res) => {
     try {
-        const { rejectionReason } = req.body;
         const leave = await Leave.findById(req.params.id);
 
         if (!leave) {
@@ -211,8 +200,6 @@ exports.rejectLeave = async (req, res) => {
 
         leave.status = 'rejected';
         leave.approvedBy = req.user.id;
-        leave.approvedDate = Date.now();
-        leave.rejectionReason = rejectionReason || 'ไม่ระบุเหตุผล';
         await leave.save();
 
         const populatedLeave = await Leave.findById(leave._id)
@@ -298,17 +285,16 @@ exports.getLeaveStats = async (req, res) => {
             },
             {
                 $group: {
-                    _id: '$leaveType',
-                    totalDays: { $sum: '$totalDays' }
+                    _id: null,
+                    totalDays: { $sum: '$totalDays' },
+                    totalLeaves: { $sum: 1 }
                 }
             }
         ]);
 
         res.status(200).json({
             success: true,
-            data: {
-                usedLeaves: stats
-            }
+            data: stats[0] || { totalDays: 0, totalLeaves: 0 }
         });
     } catch (error) {
         res.status(500).json({
