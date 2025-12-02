@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const mongoSanitize=require('express-mongo-sanitize');
 require('dotenv').config();
 const connectDB = require('./config/database');
 
@@ -12,6 +13,9 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+//Sanitize data
+app.use(mongoSanitize());
 
 // Middleware
 app.use(cors());
