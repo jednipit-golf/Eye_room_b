@@ -1,10 +1,17 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// สร้าง JWT Token
+// สร้าง Access Token (อายุสั้น)
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '7d'
+        expiresIn: '15m' // 15 นาที
+    });
+};
+
+// สร้าง Refresh Token (อายุยาว)
+const generateRefreshToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
+        expiresIn: '7d' // 7 วัน
     });
 };
 
@@ -39,11 +46,32 @@ exports.register = async (req, res) => {
             password
         });
 
-        const token = generateToken(user._id);
+        const accessToken = generateToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+
+        // เก็บ refresh token ใน database
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        // ส่ง tokens ผ่าน HTTP-Only cookies
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         res.status(201).json({
             success: true,
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -93,11 +121,32 @@ exports.login = async (req, res) => {
             });
         }
 
-        const token = generateToken(user._id);
+        const accessToken = generateToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+
+        // เก็บ refresh token ใน database
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        // ส่ง tokens ผ่าน HTTP-Only cookies
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         res.status(200).json({
             success: true,
-            token,
             user: {
                 id: user._id,
                 name: user.name,
@@ -110,6 +159,54 @@ exports.login = async (req, res) => {
             success: false,
             message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
             error: error.message
+        });
+    }
+};
+
+// @desc    Refresh access token
+// @route   POST /api/v1/auth/refresh-token
+// @access  Public
+exports.refreshToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: 'Refresh token not found'
+            });
+        }
+
+        // ตรวจสอบ refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user || user.refreshToken !== refreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid refresh token'
+            });
+        }
+
+        // สร้าง access token ใหม่
+        const newAccessToken = generateToken(user._id);
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        res.cookie('accessToken', newAccessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+
+        res.json({
+            success: true,
+            message: 'Token refreshed successfully'
+        });
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired refresh token'
         });
     }
 };
@@ -140,25 +237,44 @@ exports.getMe = async (req, res) => {
 };
 
 // @desc    ออกจากระบบ
-// @route   GET /api/v1/auth/logout
+// @route   POST /api/v1/auth/logout
 // @access  Private
 exports.logout = async (req, res, next) => {
-    res.clearCookie('token', {
-        httpOnly: true,
-        sameSite: 'strict'
-    });
-    res.clearCookie('accessToken', {
-        httpOnly: true,
-        sameSite: 'strict'
-    });
-    res.clearCookie('refreshToken', {
-        httpOnly: true,
-        sameSite: 'strict'
-    });
-    res.status(200).json({
-        success: true,
-        data: {}
-    });
+    try {
+        const { refreshToken } = req.cookies;
+        
+        // ลบ refresh token จาก database
+        if (refreshToken) {
+            try {
+                const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+                await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
+            } catch (error) {
+                // Ignore token verification errors during logout
+            }
+        }
+
+        // Clear cookies
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'strict'
+        };
+
+        res.clearCookie('accessToken', cookieOptions);
+        res.clearCookie('refreshToken', cookieOptions);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error during logout',
+            error: error.message
+        });
+    }
 };
 
 // @desc    ดึงข้อมูลสมาชิกทั้งหมดพร้อมประวัติการลา

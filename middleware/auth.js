@@ -6,7 +6,10 @@ exports.protect = async (req, res, next) => {
     try {
         let token;
 
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        // อ่าน access token จาก cookie ก่อน ถ้าไม่มีค่อยดูจาก Authorization header
+        if (req.cookies.accessToken) {
+            token = req.cookies.accessToken;
+        } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
         }
 
@@ -30,6 +33,13 @@ exports.protect = async (req, res, next) => {
 
         next();
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token หมดอายุ',
+                expired: true
+            });
+        }
         return res.status(401).json({
             success: false,
             message: 'Token ไม่ถูกต้องหรือหมดอายุ'
