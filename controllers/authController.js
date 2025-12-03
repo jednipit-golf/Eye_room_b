@@ -147,6 +147,7 @@ exports.login = async (req, res) => {
 
         res.status(200).json({
             success: true,
+            accessToken: accessToken, // ส่ง token กลับไปด้วยสำหรับ iOS
             user: {
                 id: user._id,
                 name: user.name,
@@ -201,7 +202,8 @@ exports.refreshToken = async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Token refreshed successfully'
+            message: 'Token refreshed successfully',
+            accessToken: newAccessToken // ส่ง token กลับไปด้วยสำหรับ iOS
         });
     } catch (error) {
         return res.status(401).json({
