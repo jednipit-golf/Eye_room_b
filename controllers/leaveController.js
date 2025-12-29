@@ -151,7 +151,7 @@ exports.getLeaveById = async (req, res) => {
     }
 };
 
-// @desc    อนุมัติคำขอลา
+// @desc    อนุญาตคำขอลา
 // @route   PUT /api/v1/leaves/:id/approve
 // @access  Private (Admin)
 exports.approveLeave = async (req, res) => {
@@ -168,7 +168,7 @@ exports.approveLeave = async (req, res) => {
         if (leave.status !== 'pending') {
             return res.status(400).json({
                 success: false,
-                message: 'ไม่สามารถอนุมัติคำขอที่มีสถานะนี้ได้'
+                message: 'ไม่สามารถอนุญาตคำขอที่มีสถานะนี้ได้'
             });
         }
 
@@ -189,7 +189,7 @@ exports.approveLeave = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'เกิดข้อผิดพลาดในการอนุมัติคำขอลา',
+            message: 'เกิดข้อผิดพลาดในการอนุญาตคำขอลา',
             error: error.message
         });
     }
@@ -218,6 +218,7 @@ exports.rejectLeave = async (req, res) => {
 
         leave.status = 'rejected';
         leave.approvedBy = req.user.id;
+        leave.approvedDate = Date.now();
         await leave.save();
 
         const populatedLeave = await Leave.findById(leave._id)
