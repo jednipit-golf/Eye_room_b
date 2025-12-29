@@ -47,12 +47,12 @@ leaveSchema.virtual('formattedStartDate').get(function() {
     return `${day}-${month}-${year}`;
 });
 
-// Virtual field สำหรับแสดงวันที่อนุมัติ/ไม่อนุมัติ ในรูปแบบ DD/MM/YYYY HH:MM:SS (พ.ศ.)
+// Virtual field สำหรับแสดงวันที่อนุมัติ/ไม่อนุมัติ ในรูปแบบ D/M/YYYY HH:MM:SS (พ.ศ.)
 leaveSchema.virtual('formattedApprovedDate').get(function() {
     if (!this.approvedDate) return null;
     const date = new Date(this.approvedDate);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
     const year = date.getFullYear() + 543; // แปลง ค.ศ. เป็น พ.ศ.
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
