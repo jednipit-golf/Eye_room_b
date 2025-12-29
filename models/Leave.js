@@ -47,7 +47,7 @@ leaveSchema.virtual('formattedStartDate').get(function() {
     return `${day}-${month}-${year}`;
 });
 
-// Virtual field สำหรับแสดงวันที่อนุมัติ/ไม่อนุมัติ ในรูปแบบ D/M/YYYY HH:MM:SS (พ.ศ.)
+// Virtual field สำหรับแสดงวันที่อนุญาต/ไม่อนุญาต ในรูปแบบ D/M/YYYY HH:MM:SS (พ.ศ.)
 leaveSchema.virtual('formattedApprovedDate').get(function() {
     if (!this.approvedDate) return null;
     const date = new Date(this.approvedDate);
