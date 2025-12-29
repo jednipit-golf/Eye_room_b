@@ -218,6 +218,7 @@ exports.rejectLeave = async (req, res) => {
 
         leave.status = 'rejected';
         leave.approvedBy = req.user.id;
+        leave.approvedDate = Date.now();
         await leave.save();
 
         const populatedLeave = await Leave.findById(leave._id)
