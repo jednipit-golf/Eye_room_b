@@ -178,9 +178,21 @@ exports.approveLeave = async (req, res) => {
         leave.approvedDate = Date.now();
         await leave.save();
 
+        console.log('Approved leave saved:', {
+            id: leave._id,
+            approvedDate: leave.approvedDate,
+            status: leave.status
+        });
+
         const populatedLeave = await Leave.findById(leave._id)
             .populate('user', 'name telephone')
             .populate('approvedBy', 'name');
+
+        console.log('Populated leave data:', {
+            id: populatedLeave._id,
+            approvedDate: populatedLeave.approvedDate,
+            formattedApprovedDate: populatedLeave.formattedApprovedDate
+        });
 
         res.status(200).json({
             success: true,
@@ -221,9 +233,21 @@ exports.rejectLeave = async (req, res) => {
         leave.approvedDate = Date.now();
         await leave.save();
 
+        console.log('Rejected leave saved:', {
+            id: leave._id,
+            approvedDate: leave.approvedDate,
+            status: leave.status
+        });
+
         const populatedLeave = await Leave.findById(leave._id)
             .populate('user', 'name telephone')
             .populate('approvedBy', 'name');
+
+        console.log('Populated leave data:', {
+            id: populatedLeave._id,
+            approvedDate: populatedLeave.approvedDate,
+            formattedApprovedDate: populatedLeave.formattedApprovedDate
+        });
 
         res.status(200).json({
             success: true,

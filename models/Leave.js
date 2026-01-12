@@ -33,7 +33,31 @@ const leaveSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true,
-    toJSON: { virtuals: true },
+    toJSON: { 
+        virtuals: true,
+        transform: function(doc, ret) {
+            // เพิ่ม formattedApprovedDate โดยตรงใน JSON
+            if (ret.approvedDate) {
+                const date = new Date(ret.approvedDate);
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear() + 543;
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                ret.formattedApprovedDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+            }
+            // เพิ่ม formattedStartDate โดยตรงใน JSON
+            if (ret.startDate) {
+                const date = new Date(ret.startDate);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear() + 543;
+                ret.formattedStartDate = `${day}-${month}-${year}`;
+            }
+            return ret;
+        }
+    },
     toObject: { virtuals: true }
 });
 
