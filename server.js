@@ -32,11 +32,20 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
         
+        // Check exact match
         if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+            return callback(null, true);
         }
+        
+        // Allow all Vercel preview deployments and subdomains
+        if (origin && (
+            origin.match(/^https:\/\/eye-room-f.*\.vercel\.app$/) ||
+            origin.match(/^https:\/\/eye-room-f-.*\.vercel\.app$/)
+        )) {
+            return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     optionsSuccessStatus: 200
