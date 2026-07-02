@@ -24,8 +24,9 @@ const app = express();
 const allowedOrigins = [
     'http://localhost:5173',
     'https://eye-room-f.vercel.app',
-    process.env.FRONTEND_URL
-].filter(Boolean);
+    process.env.FRONTEND_URL,
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [])
+].map(origin => origin && origin.trim()).filter(Boolean);
 
 const corsOptions = {
     origin: function (origin, callback) {
@@ -34,14 +35,6 @@ const corsOptions = {
         
         // Check exact match
         if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
-        }
-        
-        // Allow all Vercel preview deployments and subdomains
-        if (origin && (
-            origin.match(/^https:\/\/eye-room-f.*\.vercel\.app$/) ||
-            origin.match(/^https:\/\/eye-room-f-.*\.vercel\.app$/)
-        )) {
             return callback(null, true);
         }
         
