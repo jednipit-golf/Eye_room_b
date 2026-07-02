@@ -6,11 +6,11 @@ exports.protect = async (req, res, next) => {
     try {
         let token;
 
-        // อ่าน access token จาก HttpOnly cookie ก่อน และคงรองรับ Bearer ชั่วคราว
-        if (req.cookies.accessToken) {
-            token = req.cookies.accessToken;
-        } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        // อ่าน access token จาก Authorization header ก่อน (สำหรับ iOS) ถ้าไม่มีค่อยดูจาก cookie
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
+        } else if (req.cookies.accessToken) {
+            token = req.cookies.accessToken;
         }
 
         if (!token || token=='null') {
