@@ -1,5 +1,11 @@
 const Leave = require('../models/Leave');
 const User = require('../models/User');
+const {
+    parseThaiDateString,
+    parseISODateStringAsBangkokDate,
+    getCurrentBangkokYear,
+    getBangkokYearRange
+} = require('../utils/thaiDate');
 
 // @desc    สร้างคำขอลาใหม่
 // @route   POST /api/v1/leaves
@@ -19,14 +25,7 @@ exports.createLeave = async (req, res) => {
         // แปลงวันที่จากรูปแบบ DD-MM-YYYY (พ.ศ.) เป็น Date object
         let parsedDate;
         try {
-            const [day, month, yearBE] = startDate.split('-');
-            const yearAD = parseInt(yearBE) - 543; // แปลง พ.ศ. เป็น ค.ศ.
-            parsedDate = new Date(yearAD, parseInt(month) - 1, parseInt(day));
-            
-            // ตรวจสอบว่าวันที่ถูกต้องหรือไม่
-            if (isNaN(parsedDate.getTime())) {
-                throw new Error('รูปแบบวันที่ไม่ถูกต้อง');
-            }
+            parsedDate = parseThaiDateString(startDate);
         } catch (err) {
             return res.status(400).json({
                 success: false,
@@ -91,7 +90,7 @@ exports.getAllLeaves = async (req, res) => {
 
         if (status) query.status = status;
         if (startDate) {
-            query.startDate = { $gte: new Date(startDate) };
+            query.startDate = { $gte: parseISODateStringAsBangkokDate(startDate) };
         }
 
         const leaves = await Leave.find(query)
@@ -319,7 +318,8 @@ exports.cancelLeave = async (req, res) => {
 exports.getLeaveStats = async (req, res) => {
     try {
         const userId = req.user.id;
-        const currentYear = new Date().getFullYear();
+        const currentYear = getCurrentBangkokYear();
+        const yearRange = getBangkokYearRange(currentYear);
         const mongoose = require('mongoose');
 
         const stats = await Leave.aggregate([
@@ -328,8 +328,8 @@ exports.getLeaveStats = async (req, res) => {
                     user: new mongoose.Types.ObjectId(userId),
                     status: 'approved',
                     startDate: {
-                        $gte: new Date(`${currentYear}-01-01`),
-                        $lte: new Date(`${currentYear}-12-31`)
+                        $gte: yearRange.start,
+                        $lt: yearRange.end
                     }
                 }
             },
