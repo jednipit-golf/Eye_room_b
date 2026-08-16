@@ -1,15 +1,21 @@
 const Leave = require('../models/Leave');
 const User = require('../models/User');
+const {
+    parseThaiDateString,
+    parseISODateStringAsBangkokDate,
+    getCurrentBangkokYear,
+    getBangkokYearRange
+} = require('../utils/thaiDate');
 
 // @desc    สร้างคำขอลาใหม่
 // @route   POST /api/v1/leaves
 // @access  Private
 exports.createLeave = async (req, res) => {
     try {
-        const { startDate, totalDays, reason } = req.body;
+        const { startDate, totalDays, leaveType, reason } = req.body;
 
         // ตรวจสอบข้อมูล
-        if (!startDate || !totalDays || !reason) {
+        if (!startDate || !totalDays || !leaveType || !reason) {
             return res.status(400).json({
                 success: false,
                 message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
@@ -17,16 +23,16 @@ exports.createLeave = async (req, res) => {
         }
 
         // แปลงวันที่จากรูปแบบ DD-MM-YYYY (พ.ศ.) เป็น Date object
+        if (!['sick', 'vacation', 'other'].includes(leaveType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'กรุณาระบุประเภทการลาให้ถูกต้อง'
+            });
+        }
+
         let parsedDate;
         try {
-            const [day, month, yearBE] = startDate.split('-');
-            const yearAD = parseInt(yearBE) - 543; // แปลง พ.ศ. เป็น ค.ศ.
-            parsedDate = new Date(yearAD, parseInt(month) - 1, parseInt(day));
-            
-            // ตรวจสอบว่าวันที่ถูกต้องหรือไม่
-            if (isNaN(parsedDate.getTime())) {
-                throw new Error('รูปแบบวันที่ไม่ถูกต้อง');
-            }
+            parsedDate = parseThaiDateString(startDate);
         } catch (err) {
             return res.status(400).json({
                 success: false,
@@ -39,6 +45,7 @@ exports.createLeave = async (req, res) => {
             user: req.user.id,
             startDate: parsedDate,
             totalDays,
+            leaveType,
             reason
         });
 
@@ -91,7 +98,7 @@ exports.getAllLeaves = async (req, res) => {
 
         if (status) query.status = status;
         if (startDate) {
-            query.startDate = { $gte: new Date(startDate) };
+            query.startDate = { $gte: parseISODateStringAsBangkokDate(startDate) };
         }
 
         const leaves = await Leave.find(query)
@@ -319,7 +326,8 @@ exports.cancelLeave = async (req, res) => {
 exports.getLeaveStats = async (req, res) => {
     try {
         const userId = req.user.id;
-        const currentYear = new Date().getFullYear();
+        const currentYear = getCurrentBangkokYear();
+        const yearRange = getBangkokYearRange(currentYear);
         const mongoose = require('mongoose');
 
         const stats = await Leave.aggregate([
@@ -328,8 +336,8 @@ exports.getLeaveStats = async (req, res) => {
                     user: new mongoose.Types.ObjectId(userId),
                     status: 'approved',
                     startDate: {
-                        $gte: new Date(`${currentYear}-01-01`),
-                        $lte: new Date(`${currentYear}-12-31`)
+                        $gte: yearRange.start,
+                        $lt: yearRange.end
                     }
                 }
             },
