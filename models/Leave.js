@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { formatBangkokDate, formatBangkokDateTime } = require('../utils/thaiDate');
 
 const leaveSchema = new mongoose.Schema({
     user: {
@@ -38,22 +39,11 @@ const leaveSchema = new mongoose.Schema({
         transform: function(doc, ret) {
             // เพิ่ม formattedApprovedDate โดยตรงใน JSON
             if (ret.approvedDate) {
-                const date = new Date(ret.approvedDate);
-                const day = date.getDate();
-                const month = date.getMonth() + 1;
-                const year = date.getFullYear() + 543;
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                const seconds = String(date.getSeconds()).padStart(2, '0');
-                ret.formattedApprovedDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                ret.formattedApprovedDate = formatBangkokDateTime(ret.approvedDate);
             }
             // เพิ่ม formattedStartDate โดยตรงใน JSON
             if (ret.startDate) {
-                const date = new Date(ret.startDate);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear() + 543;
-                ret.formattedStartDate = `${day}-${month}-${year}`;
+                ret.formattedStartDate = formatBangkokDate(ret.startDate, '-');
             }
             return ret;
         }
@@ -64,24 +54,13 @@ const leaveSchema = new mongoose.Schema({
 // Virtual field สำหรับแสดงวันที่ในรูปแบบ DD-MM-YYYY (พ.ศ.)
 leaveSchema.virtual('formattedStartDate').get(function() {
     if (!this.startDate) return null;
-    const date = new Date(this.startDate);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear() + 543; // แปลง ค.ศ. เป็น พ.ศ.
-    return `${day}-${month}-${year}`;
+    return formatBangkokDate(this.startDate, '-');
 });
 
 // Virtual field สำหรับแสดงวันที่อนุญาต/ไม่อนุญาต ในรูปแบบ D/M/YYYY HH:MM:SS (พ.ศ.)
 leaveSchema.virtual('formattedApprovedDate').get(function() {
     if (!this.approvedDate) return null;
-    const date = new Date(this.approvedDate);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear() + 543; // แปลง ค.ศ. เป็น พ.ศ.
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    return formatBangkokDateTime(this.approvedDate);
 });
 
 module.exports = mongoose.model('Leave', leaveSchema);
