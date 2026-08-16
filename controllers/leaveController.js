@@ -12,10 +12,10 @@ const {
 // @access  Private
 exports.createLeave = async (req, res) => {
     try {
-        const { startDate, totalDays, reason } = req.body;
+        const { startDate, totalDays, leaveType, reason } = req.body;
 
         // ตรวจสอบข้อมูล
-        if (!startDate || !totalDays || !reason) {
+        if (!startDate || !totalDays || !leaveType || !reason) {
             return res.status(400).json({
                 success: false,
                 message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
@@ -23,6 +23,13 @@ exports.createLeave = async (req, res) => {
         }
 
         // แปลงวันที่จากรูปแบบ DD-MM-YYYY (พ.ศ.) เป็น Date object
+        if (!['sick', 'vacation', 'other'].includes(leaveType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'กรุณาระบุประเภทการลาให้ถูกต้อง'
+            });
+        }
+
         let parsedDate;
         try {
             parsedDate = parseThaiDateString(startDate);
@@ -38,6 +45,7 @@ exports.createLeave = async (req, res) => {
             user: req.user.id,
             startDate: parsedDate,
             totalDays,
+            leaveType,
             reason
         });
 

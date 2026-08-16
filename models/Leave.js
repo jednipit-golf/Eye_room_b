@@ -15,6 +15,11 @@ const leaveSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    leaveType: {
+        type: String,
+        enum: ['sick', 'vacation', 'other'],
+        required: [true, 'กรุณาระบุประเภทการลา']
+    },
     reason: {
         type: String,
         required: [true, 'กรุณาระบุเหตุผลการลา'],
