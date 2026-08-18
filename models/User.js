@@ -32,15 +32,28 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Hash password ก่อน save
+// Hash password before save with pepper
 userSchema.pre('save', async function() {
     if (!this.isModified('password')) return;
-    this.password = await bcrypt.hash(this.password, 10);
+
+    const pepper = process.env.PEPPER_SECRET;
+    if (!pepper) {
+        throw new Error('PEPPER_SECRET is required');
+    }
+
+    const pepperedPassword = this.password + pepper;
+    this.password = await bcrypt.hash(pepperedPassword, 10);
 });
 
-// Method สำหรับตรวจสอบรหัสผ่าน
+// password compare
 userSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+    const pepper = process.env.PEPPER_SECRET;
+    if (!pepper) {
+        throw new Error('PEPPER_SECRET is required');
+    }
+
+    const pepperedCandidate = candidatePassword + pepper;
+    return await bcrypt.compare(pepperedCandidate, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
