@@ -25,8 +25,7 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://eye-room-f.vercel.app',
-    process.env.FRONTEND_URL
+    'https://eye-room-f.vercel.app'
 ].filter(Boolean);
 
 const corsOptions = {
