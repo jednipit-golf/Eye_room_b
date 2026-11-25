@@ -30,30 +30,31 @@ if (trustedProxies) {
 app.use(requestLogger);
 
 // CORS configuration
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://eye-room-f.vercel.app'
-].filter(Boolean);
+const isDevelopment = process.env.NODE_ENV === 'development';
+const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS ?? process.env.FRONTEND_URL ?? '';
+const allowedOrigins = new Set();
+for (const entry of configuredOrigins.split(',').map(value => value.trim()).filter(Boolean)) {
+    const url = new URL(entry);
+    if (!['https:', 'http:'].includes(url.protocol) ||
+        (entry !== url.origin && entry !== url.origin + '/') || entry.includes('*')) {
+        throw new Error('CORS origins must be exact HTTP(S) origins');
+    }
+    const host = url.hostname.replace(/\.$/, '');
+    const isLocalhost = host === 'localhost' || host.endsWith('.localhost') ||
+        /^127\.\d+\.\d+\.\d+$/.test(host) || host === '[::1]';
+    if (isDevelopment || (!isLocalhost && url.protocol === 'https:')) {
+        allowedOrigins.add(url.origin);
+    }
+}
+if (isDevelopment) allowedOrigins.add('http://localhost:5173');
 
 const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        // Check exact match
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
-        }
-        
-        // Allow all Vercel preview deployments and subdomains
-        if (origin && (
-            origin.match(/^https:\/\/eye-room-f.*\.vercel\.app$/) ||
-            origin.match(/^https:\/\/eye-room-f-.*\.vercel\.app$/)
-        )) {
-            return callback(null, true);
-        }
-        
-        callback(new Error('Not allowed by CORS'));
+        if (origin === undefined || allowedOrigins.has(origin)) return callback(null, true);
+        const error = new Error('Not allowed by CORS');
+        error.status = 403;
+        callback(error);
     },
     credentials: true,
     optionsSuccessStatus: 200
