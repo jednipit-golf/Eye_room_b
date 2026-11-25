@@ -358,6 +358,7 @@ exports.resetPassword = async (req, res) => {
 
         // อัปเดตรหัสผ่าน (จะถูก hash อัตโนมัติผ่าน pre-save middleware)
         user.password = password;
+        user.refreshToken = null;
         await user.save();
 
         res.status(200).json({
