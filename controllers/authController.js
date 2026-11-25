@@ -50,32 +50,9 @@ exports.register = async (req, res) => {
             password
         });
 
-        const accessToken = generateToken(user._id);
-        const refreshToken = generateRefreshToken(user._id);
-
-        // เก็บ refresh token ใน database
-        user.refreshToken = hashRefreshToken(refreshToken);
-        await user.save();
-
-        // ส่ง tokens ผ่าน HTTP-Only cookies
-        const isProduction = process.env.NODE_ENV === 'production';
-        
-        res.cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? 'none' : 'strict',
-            maxAge: 15 * 60 * 1000 // 15 minutes
-        });
-
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? 'none' : 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
         res.status(201).json({
             success: true,
+            message: 'สร้างผู้ใช้สำเร็จ',
             user: {
                 id: user._id,
                 name: user.name,
