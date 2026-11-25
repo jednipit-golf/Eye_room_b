@@ -1,3 +1,4 @@
+const { createHash, randomUUID } = require('node:crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -11,9 +12,12 @@ const generateToken = (id) => {
 // สร้าง Refresh Token (อายุยาว)
 const generateRefreshToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
+        jwtid: randomUUID(),
         expiresIn: '7d' // 7 วัน
     });
 };
+
+const hashRefreshToken = (token) => createHash('sha256').update(token).digest('hex');
 
 // @desc    ลงทะเบียนผู้ใช้งานใหม่
 // @route   POST /api/v1/auth/register
@@ -50,7 +54,7 @@ exports.register = async (req, res) => {
         const refreshToken = generateRefreshToken(user._id);
 
         // เก็บ refresh token ใน database
-        user.refreshToken = refreshToken;
+        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
 
         // ส่ง tokens ผ่าน HTTP-Only cookies
@@ -83,7 +87,7 @@ exports.register = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการลงทะเบียน',
-            error: error.message
+            error: 'Unable to complete authentication'
         });
     }
 };
@@ -125,7 +129,7 @@ exports.login = async (req, res) => {
         const refreshToken = generateRefreshToken(user._id);
 
         // เก็บ refresh token ใน database
-        user.refreshToken = refreshToken;
+        user.refreshToken = hashRefreshToken(refreshToken);
         await user.save();
 
         // ส่ง tokens ผ่าน HTTP-Only cookies
@@ -159,7 +163,7 @@ exports.login = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
-            error: error.message
+            error: 'Unable to complete authentication'
         });
     }
 };
@@ -180,9 +184,12 @@ exports.refreshToken = async (req, res) => {
 
         // ตรวจสอบ refresh token
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-        const user = await User.findById(decoded.id);
+        const user = await User.findOne({
+            _id: decoded.id,
+            refreshToken: hashRefreshToken(refreshToken)
+        }).select('_id');
 
-        if (!user || user.refreshToken !== refreshToken) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid refresh token'
@@ -247,11 +254,17 @@ exports.logout = async (req, res, next) => {
         
         // ลบ refresh token จาก database
         if (refreshToken) {
+            let decoded;
             try {
-                const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-                await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
+                decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
             } catch (error) {
                 // Ignore token verification errors during logout
+            }
+            if (decoded) {
+                await User.updateOne(
+                    { _id: decoded.id, refreshToken: hashRefreshToken(refreshToken) },
+                    { $set: { refreshToken: null } }
+                );
             }
         }
 
@@ -274,7 +287,7 @@ exports.logout = async (req, res, next) => {
         res.status(500).json({
             success: false,
             message: 'Error during logout',
-            error: error.message
+            error: 'Unable to revoke session'
         });
     }
 };
