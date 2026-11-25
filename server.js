@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const sanitizeMiddleware = require('./middleware/sanitizeMiddleware');
 const limiter = require('./middleware/rateLimiter');
+const requestLogger = require('./middleware/requestLogger');
 const { xss } = require('express-xss-sanitizer');
 const rateLimit = require('express-rate-limit');
 const hpp=require('hpp');
@@ -19,6 +20,14 @@ const leaveRoutes = require('./routes/leaveRoutes');
 connectDB();
 
 const app = express();
+
+// Set to the verified ingress proxy IPs/CIDRs, nearest to the app through the edge.
+// Express stops at the first untrusted address. Direct deployments use the socket IP.
+const trustedProxies = process.env.TRUSTED_PROXY_CIDRS;
+if (trustedProxies) {
+    app.set('trust proxy', trustedProxies.split(',').map(value => value.trim()));
+}
+app.use(requestLogger);
 
 // CORS configuration
 const allowedOrigins = [
@@ -95,6 +104,14 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// Parser and URL-decoding errors can include raw user input in Express's default error log.
+app.use((err, req, res, next) => {
+    if (!res.headersSent && (err.type === 'entity.parse.failed' || err instanceof URIError)) {
+        return res.sendStatus(err.status || 400);
+    }
+    next(err);
+});
 
 const server = app.listen(PORT, console.log('Server running in ', process.env.NODE_ENV, ' mode on port ', PORT));
 
